@@ -13,10 +13,6 @@ import MyTicToc as mt
 import pandas as pd
 from scipy import integrate
 
-# Definition of parameters REDO
-a = 1
-b = 0.25
-
 # %% Import Data WieringermeerData_Meteo.xlsx (Date, Precip, Evap, Temp)
 
 MeteoData = pd.read_csv (r'C:\Users\anika\Documents\Environmental Engineering\Modelling Coupled Processes\Assignment 1\WieringermeerData_Meteo.csv')
@@ -28,10 +24,21 @@ LeachateData = pd.read_csv (r'C:\Users\anika\Documents\Environmental Engineering
 # data with same dates selected
 
 Qdr = LeachateData.iloc[:, 1]  # Leachate output [m^3/day] 
-Jrf = MeteoData.iloc[-(len(Qdr) + 1) : -1, 1]  # precipitation [m/day]
+Jrfday = MeteoData.iloc[-(len(Qdr) + 1) : -1, 1]  # precipitation [m/day]
 pE = MeteoData.iloc[-(len(Qdr) + 1) : -1, 2]  # Evaporation [m/day]
 
 """ Dates now line up """
+
+# %% Parameters
+
+acl = 500   # hydraulic ocnductivity, ex: 1.1 * Qdrain_max THE CURRENT NUMBER IS A PLACEHOLDER!!!
+bcl = 1.25  # Some value > 1
+Sclmin = 1   # placeholder
+Sclmax = 100   # placeholder
+
+
+
+
 
 # %% Definition of Rate Equation
 # S[0] = Scl, S[1] = Swd
@@ -46,7 +53,8 @@ def dSdt(t, S):
     
     # Equations here
     
-    
+#    Jrf  = Jrfday[t/(timestepdaily)]   Can we include t in this? Or do we define that somewhere else?
+    # See brightspace for more on what to do with t
     dScldt = Jrf - Lcl - E    # function that extracts value from time (not an integer). Make sure to divide rainfall over day. Outflow data form hourly => daily
     
     
