@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import scipy as sp
 import MyTicToc as mt
 import pandas as pd
-from scipy import integrate
+#from scipy import integrate
 
 # %% Import Data WieringermeerData_Meteo.xlsx (Date, Precip, Evap, Temp)
 
@@ -25,40 +25,53 @@ LeachateData = pd.read_csv (r'C:\Users\anika\Documents\Environmental Engineering
 
 Qdr = LeachateData.iloc[:, 1]  # Leachate output [m^3/day] 
 Jrfday = MeteoData.iloc[-(len(Qdr) + 1) : -1, 1]  # precipitation [m/day]
-pE = MeteoData.iloc[-(len(Qdr) + 1) : -1, 2]  # Evaporation [m/day]
+pEv = MeteoData.iloc[-(len(Qdr) + 1) : -1, 2]  # Evaporation [m/day]
 
 """ Dates now line up """
 
-# %% Parameters
+# %% Parameters TODO
 
-acl = 500   # hydraulic ocnductivity, ex: 1.1 * Qdrain_max THE CURRENT NUMBER IS A PLACEHOLDER!!!
-bcl = 1.25  # Some value > 1
-Sclmin = 1   # placeholder
-Sclmax = 100   # placeholder
-
-
-
-
+a = 500         # hydraulic ocnductivity, ex: 1.1 * Qdrain_max THE CURRENT NUMBER IS A PLACEHOLDER!!!
+bcl = 1.25      # Some value > 1
+bwb = 1.25
+Sclmin = 1      # placeholder
+Sclmax = 100    # placeholder
+Swbmin = 1      # placeholder
+Swbmax = 100    # placeholder
+Ccrop = 0.9     # Cropfactor (researched. ref: Transport Phenomena)
+Sevmin = 2      # placeholder
+Sevmax = 10     # placeholder
+Beta0 = 0.9     # placeholder
+tstep = 24      # placeholder
 
 # %% Definition of Rate Equation
 # S[0] = Scl, S[1] = Swd
 
 def dSdt(t, S):
-    """ Return the rate of change of the storages. Q: BUT WE KNOW THE LAST = O SO NOW WHAT? """
+    """ Return the rate of change of the storages """
     Scl = S[0]
     Swb = S[1]
     Seffcl = (Scl-Sclmin)/(Sclmax - Sclmin)
-    Lcl = acl * Seffcc**bcl
+    Seffwb = (Swb-Swbmin)/(Swbmax - Swbmin)
+    Lcl = a * Seffcl**bcl
+    Lwb = a * Seffwb**bwb
     
+    if Scl < Sevmin:        # TODO: Check this format for an if-statement
+        fred = 0
+    elif Scl > Sevmax:
+            fred = 1
+    else: fred = (Scl - Sevmin)/(Sevmax - Sevmin)
     
-    # Equations here
+    E = pEv * Ccrop * fred    # TODO: find how to get times, find 
     
-#    Jrf  = Jrfday[t/(timestepdaily)]   Can we include t in this? Or do we define that somewhere else?
+    Beta = Beta0 * Seffcl
+    
+    Jrf  = Jrfday / tstep   # Can we include t in this? Or do we define that somewhere else?
     # See brightspace for more on what to do with t
+    
     dScldt = Jrf - Lcl - E    # function that extracts value from time (not an integer). Make sure to divide rainfall over day. Outflow data form hourly => daily
-    
-    
-    # 
+    dSwdt = (1 - Beta) * Lcl - Lwb
+    Qdrain = Beta * Lcl + Lwb
     
     return np.array([dScldt,
                      dSwdt,
@@ -68,11 +81,12 @@ def dSdt(t, S):
 
 def main():
     # Definition of output times
-    tOut = list(range(1, len(Qdr) + 1))            # time [days]
-    nOut = np.shape(tOut)[0]
+    #tOut = list(range(1, len(Qdr) + 1))        # time [days]
+    tOut = np.arange(0, len(Qdr), 1/tstep)      # time as (a fraction of) days
+#    nOut = np.shape(tOut)[0]                   # Do we need this?
 
     # Initial case, 
-    S0 = np.array([1, 1, 1])
+    S0 = np.array([1, 1, 1])   # Inital case. What should these be? TODO
     mt.tic()
     t_span = [tOut[0], tOut[-1]]
     SODE = sp.integrate.solve_ivp(dSdt, t_span, S0, t_eval=tOut, 
@@ -82,11 +96,11 @@ def main():
     
     # CAll on function again to get Qdrain based on the solved data. Compare with measurements
     
-    SclODE = YODE.y[0,:]
-    SwdODE = YODE.y[1,:]
-    QdrainODE = YODE.y[2,:]
-# %%
+    SclODE = SODE.y[0,:]
+    SwdODE = SODE.y[1,:]
+    QdrainODE = SODE.y[2,:]
     
+# %%     
     '''EULER - cut out for now'''
 
     '''EULER Predictor Corrector - cut out for now '''
@@ -100,9 +114,9 @@ def main():
 
     # Plot results with matplotlib    
     plt.figure()
-    plt.plot(tOut, LclODE, 'r-', label='LclODE')
-    plt.plot(tOut, LwdODE, 'b-', label='LwdODE')
-    plt.plot(tOut, BetaODE, 'b-', label='BODE')
+    plt.plot(tOut, SclODE, 'r-', label='LclODE')
+    plt.plot(tOut, SwdODE, 'b-', label='LwdODE')
+    plt.plot(tOut, QdrainODE, 'b-', label='BODE')
 #    plt.plot(tOut, rEuler, 'g+', label='REuler')
 #    plt.plot(tOut, fEuler, 'm+', label='FEuler')
 #    plt.plot(tOut, rPC, 'rx', label='RPC')
