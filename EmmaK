@@ -1,0 +1,119 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy as sp
+get_ipython().run_line_magic('matplotlib', 'inline')
+import pandas as pd
+
+
+# ### Definition of Rate Equation
+
+# In[ ]:
+
+
+def dSdt(t,S,a,bcl,Sclmin,Sclmax,bwb,Swbmin,Swbmax,Beta0,Sevmin,Sevmax,Cf)
+    
+    Scl = S[0]
+    Swb = S[1]
+    Sdr = S[2]
+    
+    Lcl = a * ((Scl - Sclmin) / (Sclmax - Sclmin))**bcl
+    Lwb = a * ((Swb - Swbmin) / (Swbmax - Swbmin))**bwb
+    
+    Beta = Beta0 * ((Scl - Sclmin) / (Sclmax - Sclmin))
+    
+    if Scl < Sevmin:
+        fred = 0
+    elif Scl > Sevmax:
+        fred = 1
+    else:
+        fred = (Scl - Sevmin)/(Sevmax-Sevmin)
+        
+    E = pEv[t] * Cf * fred
+    
+    dScl = J[t] - Lcl - E
+    dSwb = (1 - B)*Lcl - Lwb
+    Qdr = Beta*Lcl + Lwb
+    
+    return np.array([ dScl ,
+                     dSwb ,
+                     Qdr ])
+
+
+# dSdt (1) needs an extra term for when Scl is saturated.
+# Use numpy.vectorize?
+
+# In[ ]:
+
+
+def main(J,):
+    t_out = np.arange(0,len(J),1)
+    n_out = np.shape(t_out)[0]
+    
+    #initial case:
+    S0 = np.array([1,1,1])
+    
+    t_span = [t_out[0],t_out[-1]]
+    SODE = sp.integrate.solve_ivp(dSdt,t_span,S0,t_eval=t_out,method='RK45',vectorized=True,rtol=1e-5)
+    
+    SclODE = SODE.y[0,:]
+    SwbODE = SODE.y[1,:]
+    QdrODE = SODE.y[2,:]
+    
+
+
+# ### Input
+
+# In[12]:
+
+
+Qdr = pd.read_excel('WieringermeerData_LeachateProduction.xlsx', index_col = 0)
+df_meteo = pd.read_excel('WieringermeerData_Meteo.xlsx', index_col = 0)
+J = df_meteo.iloc[:,0].loc['2012-06-14':'2019-12-31']
+pEv = df_meteo.iloc[:,1].loc['2012-06-14':'2019-12-31']
+
+
+# In[ ]:
+
+
+a =
+bcl = 
+Sclmin = 
+Sclmax = 
+bwb = 
+Swbmin = 
+Swbmax =
+Beta0 =
+Sevmin =
+Sevmax =
+Cf = 0.9
+
+
+# Data for only 1 year for testing (2018):
+
+# In[15]:
+
+
+J_2018 = J.loc['2018-01-01':'2018-12-31']
+pEv_2018 = pEv.loc['2018-01-01':'2018-12-31']
+Qdr_2018 = Qdr.loc['2018-01-01':'2018-12-31']
+
+
+# In[30]:
+
+
+t_out = np.arange(0,len(J),1)
+n_out = np.shape(t_out)[0]
+n_out
+
+
+# In[ ]:
+
+
+
+
