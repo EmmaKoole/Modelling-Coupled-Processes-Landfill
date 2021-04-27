@@ -47,6 +47,14 @@ tstep = 24      # placeholder
 # %% Definition of Rate Equation
 # S[0] = Scl, S[1] = Swd
 
+def f(t):   # where t is the day number
+    t = int(t)
+    return Jrfday[t] / tstep
+    
+def g(t):
+    t = int(t)
+    return pEv[t] / tstep
+    
 def dSdt(t, S):
     """ Return the rate of change of the storages """
     Scl = S[0]
@@ -62,31 +70,30 @@ def dSdt(t, S):
             fred = 1
     else: fred = (Scl - Sevmin)/(Sevmax - Sevmin)
     
-    E = pEv * Ccrop * fred    # TODO: find how to get times, find 
+    Jrf = f(t)
+    pE = g(t)
+    E = pE * Ccrop * fred    # TODO: find how to get times, find 
     
     Beta = Beta0 * Seffcl
     
-    Jrf  = Jrfday / tstep   # Can we include t in this? Or do we define that somewhere else?
-    # See brightspace for more on what to do with t
-    
     dScldt = Jrf - Lcl - E    # function that extracts value from time (not an integer). Make sure to divide rainfall over day. Outflow data form hourly => daily
-    dSwdt = (1 - Beta) * Lcl - Lwb
+    dSwbdt = (1 - Beta) * Lcl - Lwb
     Qdrain = Beta * Lcl + Lwb
     
     return np.array([dScldt,
-                     dSwdt,
+                     dSwbdt,
                      Qdrain])
     
 # %%
 
 def main():
     # Definition of output times
-    #tOut = list(range(1, len(Qdr) + 1))        # time [days]
-    tOut = np.arange(0, len(Qdr), 1/tstep)      # time as (a fraction of) days
+#    tOut = list(range(1, len(Qdr) + 1))        # time [days]
+    tOut = np.arange(0, len(Qdr)-1, len(Qdr))      # time as (a fraction of) days
 #    nOut = np.shape(tOut)[0]                   # Do we need this?
 
     # Initial case, 
-    S0 = np.array([1, 1, 1])   # Inital case. What should these be? TODO
+    S0 = np.array([1, 1])   # Inital case. What should these be (Scl, Swb)? TODO
     mt.tic()
     t_span = [tOut[0], tOut[-1]]
     SODE = sp.integrate.solve_ivp(dSdt, t_span, S0, t_eval=tOut, 
@@ -100,14 +107,13 @@ def main():
     SwdODE = SODE.y[1,:]
     QdrainODE = SODE.y[2,:]
     
-# %%     
+if __name__ == "__main__":
+    main()
+    
+# %%
     '''EULER - cut out for now'''
-
     '''EULER Predictor Corrector - cut out for now '''
-
     '''RungeKutta - Cut out for now'''
-    
-    
     
     # Instead of these figures, we should probably make a figure comparing the outputs for Qdrain to the measured Qdrain
     # We might even be able to create a function that minimizes the difference between selected Qdrain outputs and measured Qdrains
@@ -132,19 +138,19 @@ def main():
     # f1.savefig('rabbits_and_foxes_1.png')
     plt.show()
 
-    plt.figure()
-    plt.plot(fODE, rODE, 'b-', label='ODE')
+#    plt.figure()
+#    plt.plot(fODE, rODE, 'b-', label='ODE')
 #    plt.plot(fEuler, rEuler, 'b+', label='Euler')
 #    plt.plot(fPC, rPC, 'r-', label='Predictor Corrector')
 #    plt.plot(fRK, rRK, 'g-', label='Runge Kutta')
 
-    plt.grid()
-    plt.legend(loc='best')
-    plt.xlabel('Foxes')    
-    plt.ylabel('Rabbits')
-    plt.title('Evolution of fox and rabbit populations')
+#    plt.grid()
+#    plt.legend(loc='best')
+#    plt.xlabel('Foxes')    
+#    plt.ylabel('Rabbits')
+#    plt.title('Evolution of fox and rabbit populations')
     # f2.savefig('rabbits_and_foxes_2.png')
-    plt.show()
+#    plt.show()
 
 
 if __name__ == "__main__":
